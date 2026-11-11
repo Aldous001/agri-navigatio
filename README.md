@@ -31,6 +31,16 @@ python scripts/manage.py upload
 
 当前更新脚本同步的是原站公开索引。独立抓取各省补贴平台、月度趋势、县级地图下钻和精确厂家销量仍需接入原始记录。
 
+## 云端每日同步
+
+已在 Supabase 部署 `navigation-sync`，定时任务 `navigation-source-daily` 每天北京时间10:30读取原站公开索引。本机关闭不影响云端执行，仍依赖 Supabase 项目及参考网站正常运行。网页从受账号权限保护的快照读取数据，无需每天重新发布网页。页面显示来源数据时间和最近成功同步时间；两者不同表示检查过来源，但来源本身未更新。
+
+同步以当前快照中的137条已核验型号为名单，只更新台套数、销售额、均价、年度台套数、主要省份和覆盖省份数。新增型号不自动归入农机导航，需核实类别和厂家后维护名单。厂家名称或来源结构变化、记录缺失、负数和时间倒退都会中止更新并记录错误，保留上次快照。
+
+服务函数及测试位于 `supabase/functions/navigation-sync/` 和 `scripts/test-sync.mjs`。数据库配置在 `supabase/sync-schema.sql`、`supabase/sync-schedule.sql`；通过 Supabase 的 Cron 和 `nav_sync_runs` 表查看状态、暂停或恢复。调度令牌保存在 Vault，本机备份位于未提交的 `private/sync-token.txt`；仓库只保存令牌校验摘要，不保存令牌和服务密钥。
+
+运行同步校验：`node --test scripts/test-sync.mjs`。当前部署已做接口实跑；页面的完整登录、地图和导出交互仍需浏览器验收。
+
 ## 停用账号
 
 ```powershell

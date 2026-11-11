@@ -29,6 +29,8 @@ function clearWorkspace(message = '') {
 }
 
 async function load() {
+  const selectedYear = $('year').value;
+  const selectedMaker = $('maker').value;
   const user = await request('/auth/v1/user');
   const records = await request('/rest/v1/nav_snapshots?id=eq.current&select=payload,updated_at');
   if (!records.length) throw new Error('账号尚未获准访问，或管理员尚未上传数据，请联系管理员。');
@@ -37,13 +39,16 @@ async function load() {
   $('user-email').textContent = user.email.includes('@accounts.agri-navigation.invalid') ? '已登录' : user.email;
   const admins = await request('/rest/v1/nav_admins?select=user_id');
   $('manage-accounts').hidden = !admins.length;
-  $('updated').textContent = `数据快照 ${snapshot.generated} · 最近上传 ${new Date(records[0].updated_at).toLocaleString('zh-CN')}`;
-  $('notice').textContent = snapshot.notice + ' 数据更新时间 ' + snapshot.generated;
+  const syncInfo = snapshot.sync ? ` · ${snapshot.sync.schedule}自动同步 · 最近同步 ${new Date(snapshot.sync.checkedAt).toLocaleString('zh-CN')}` : '';
+  $('updated').textContent = `来源数据 ${snapshot.generated}${syncInfo}`;
+  $('notice').textContent = snapshot.notice + ' 来源数据时间 ' + snapshot.generated + syncInfo;
   $('source-note').textContent = snapshot.sourceNote;
   $('verified-date').textContent = snapshot.verifiedDate;
   $('year').replaceChildren(new Option('全部年份', 'all'), ...snapshot.years.map(y => new Option(`${y} 年`, y)));
   const makers = [...new Set(snapshot.models.map(m => m.factory))].sort((a, b) => a.localeCompare(b, 'zh-CN'));
   $('maker').replaceChildren(new Option('全部厂家', 'all'), ...makers.map(m => new Option(m, m)));
+  if ([...$('year').options].some(option => option.value === selectedYear)) $('year').value = selectedYear;
+  if ([...$('maker').options].some(option => option.value === selectedMaker)) $('maker').value = selectedMaker;
   $('login').hidden = true;
   $('workspace').hidden = false;
   render();
@@ -158,7 +163,10 @@ $('previous').onclick = () => {page--; render();}; $('next').onclick = () => {pa
 document.querySelectorAll('[data-view]').forEach(button => button.onclick = () => {view = button.dataset.view; document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('active', b === button)); $('page-title').textContent = view === 'overview' ? '农机导航市场概览' : '导航厂家与型号查询'; render();});
 $('export').onclick = () => {
   const escape = value => '"' + String(value ?? '').replace(/^[=+@-]/, "'$&").replaceAll('"', '""') + '"';
-  const rows = [['厂家名称','型号','型号台套数','核查依据','说明'], ...filtered().map(m => [m.factory,m.model,quantity(m),m.sourceUrl,m.note])];
+  const allYears = $('year').value === 'all';
+  const rows = [['厂家名称','型号','型号台套数','累计销售额（元）','累计均价（元）','覆盖省份数','来源数据时间','核查依据','说明'],
+    ...filtered().map(m => [m.factory,m.model,quantity(m),allYears ? m.amount : '',allYears ? m.averagePrice : '',
+      allYears ? m.provinceCount : '',snapshot.generated,m.sourceUrl,m.note])];
   const blob = new Blob(['\ufeff' + rows.map(row => row.map(escape).join(',')).join('\r\n')], {type:'text/csv;charset=utf-8'});
   const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `农机导航_${$('year').value}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
