@@ -34,7 +34,9 @@ async function load() {
   if (!records.length) throw new Error('账号尚未获准访问，或管理员尚未上传数据，请联系管理员。');
   snapshot = records[0].payload;
   if (!Array.isArray(snapshot.models) || !Array.isArray(snapshot.years)) throw new Error('数据格式异常，请联系管理员。');
-  $('user-email').textContent = user.email;
+  $('user-email').textContent = user.email.includes('@accounts.agri-navigation.invalid') ? '已登录' : user.email;
+  const admins = await request('/rest/v1/nav_admins?select=user_id');
+  $('manage-accounts').hidden = !admins.length;
   $('updated').textContent = `数据快照 ${snapshot.generated} · 最近上传 ${new Date(records[0].updated_at).toLocaleString('zh-CN')}`;
   $('notice').textContent = snapshot.notice;
   $('source-note').textContent = snapshot.sourceNote;
@@ -176,3 +178,31 @@ setInterval(async () => {
   try {session = await request('/auth/v1/token?grant_type=refresh_token', {method:'POST',body:JSON.stringify({refresh_token:session.refresh_token})}); await load(); sessionStorage.setItem('nav-session',JSON.stringify(session));}
   catch {clearWorkspace('会话已失效，请重新登录。');}
 }, 20 * 60 * 1000);
+
+let accountUsers = [];
+async function refreshAccounts(){
+ const result = await request('/functions/v1/navigation-accounts',{method:'POST',body:JSON.stringify({action:'list'})});
+ accountUsers = result.users;
+ $('account-select').replaceChildren(new Option('创建新账号',''), ...accountUsers.map(u=>new Option(u.username+(u.enabled?'':'（已停用）'),u.user_id)));
+ $('account-form').reset();$('account-enabled').checked=true;
+}
+$('manage-accounts').onclick=async()=>{
+ $('accounts-dialog').showModal();$('accounts-message').textContent='正在读取账号…';
+ try{await refreshAccounts();$('accounts-message').textContent='新账号密码至少12位。';}catch(e){$('accounts-message').textContent=e.message;}
+};
+$('accounts-close').onclick=()=>{$('account-password').value='';$('accounts-dialog').close();};
+$('account-select').onchange=()=>{
+ const user=accountUsers.find(u=>u.user_id===$('account-select').value);
+ $('account-username').value=user?.username||'';$('account-password').value='';$('account-enabled').checked=user?.enabled??true;
+ $('account-username').disabled=!!user?.self;$('account-enabled').disabled=!!user?.self;
+};
+$('account-form').onsubmit=async event=>{
+ event.preventDefault();$('account-save').disabled=true;
+ const id=$('account-select').value;
+ if(!id&&!$('account-password').value){$('accounts-message').textContent='请输入新账号密码';$('account-save').disabled=false;return;}
+ try{
+  await request('/functions/v1/navigation-accounts',{method:'POST',body:JSON.stringify({action:id?'update':'create',user_id:id,username:$('account-username').value,password:$('account-password').value,enabled:$('account-enabled').checked})});
+  await refreshAccounts();$('accounts-message').textContent='账号已保存';
+ }catch(e){$('accounts-message').textContent=e.message;}
+ finally{$('account-save').disabled=false;}
+};
