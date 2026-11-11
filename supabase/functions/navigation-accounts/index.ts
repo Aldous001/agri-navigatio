@@ -18,7 +18,7 @@ Deno.serve(async req=>{
  const username=String(x.username||"").trim().toLowerCase();
  if(!/^[a-z0-9_]{3,32}$/.test(username))return reply({message:"用户名需为3至32位字母、数字或下划线"},400);
  const password=String(x.password||"");
- if((x.action==="create"||password)&& (password.length<12||password.length>128))return reply({message:"密码需为12至128位"},400);
+ if((x.action==="create"||password)&& (password.length<6||password.length>128))return reply({message:"密码需为6至128位"},400);
  if(x.action==="create"){
  if((await api("/rest/v1/nav_login_names?username=eq."+username+"&select=user_id")).length)return reply({message:"用户名已存在"},409);
  const user=await api("/auth/v1/admin/users","POST",{email:crypto.randomUUID()+"@accounts.agri-navigation.invalid",password,email_confirm:true});

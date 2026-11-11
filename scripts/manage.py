@@ -43,9 +43,9 @@ def main():
         print('快照上传成功。')
     elif args.operation == 'create-user':
         email = args.email or input('用户邮箱 > ').strip()
-        password = getpass('初始密码（至少12位）> ')
-        if len(password) < 12:
-            raise ValueError('密码至少12位。')
+        password = getpass('初始密码（至少6位）> ')
+        if len(password) < 6:
+            raise ValueError('密码至少6位。')
         user = api('/auth/v1/admin/users', 'POST', {'email': email, 'password': password, 'email_confirm': True})
         try:
             api('/rest/v1/nav_members?on_conflict=user_id', 'POST', {'user_id': user['id'], 'enabled': True})

@@ -5,7 +5,7 @@ Deno.serve(async(req)=>{
  if(req.method!=="POST")return reply({message:"Method not allowed"},405);
  try{
  const input=await req.json();const username=String(input.username||"").trim().toLowerCase();const password=String(input.password||"");
- if(!/^[a-z0-9_]{3,32}$/.test(username)||password.length<8||password.length>1024)return reply({message:"用户名或密码错误"},401);
+ if(!/^[a-z0-9_]{3,32}$/.test(username)||password.length<6||password.length>1024)return reply({message:"用户名或密码错误"},401);
  const base=Deno.env.get("SUPABASE_URL");const key=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
  const adminHeaders={apikey:key,Authorization:"Bearer "+key};
  const lookup=await fetch(base+"/rest/v1/nav_login_names?username=eq."+encodeURIComponent(username)+"&select=user_id",{headers:adminHeaders});

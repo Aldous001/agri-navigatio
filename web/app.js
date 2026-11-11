@@ -188,7 +188,7 @@ async function refreshAccounts(){
 }
 $('manage-accounts').onclick=async()=>{
  $('accounts-dialog').showModal();$('accounts-message').textContent='正在读取账号…';
- try{await refreshAccounts();$('accounts-message').textContent='新账号密码至少12位。';}catch(e){$('accounts-message').textContent=e.message;}
+ try{await refreshAccounts();$('accounts-message').textContent='新账号密码至少6位。';}catch(e){$('accounts-message').textContent=e.message;}
 };
 $('accounts-close').onclick=()=>{$('account-password').value='';$('accounts-dialog').close();};
 $('account-select').onchange=()=>{
