@@ -88,7 +88,8 @@ function render() {
 }
 
 function renderCharts(models) {
-  renderScreenCharts(models);
+  try { renderScreenCharts(models); }
+  catch (error) { $('map-title').textContent = '地图加载失败，请刷新页面重试'; console.error(error); }
   const regions = new Map();
   for (const model of models) for (const region of model.regions || []) regions.set(region.name, (regions.get(region.name) || 0) + region.quantity);
   const ranked = [...regions].sort((a,b) => b[1] - a[1]).slice(0, 8);
@@ -113,7 +114,8 @@ function renderCharts(models) {
 
 const screenCharts = new Map();
 function renderScreenCharts(models) {
-  if (!window.echarts) return;
+  if (!window.echarts) { $('map-title').textContent = '图表组件未加载，请检查网络后刷新'; return; }
+  if (!echarts.getMap('china') && window.CHINA_GEO) echarts.registerMap('china', window.CHINA_GEO);
   const chart = id => {
     if (!screenCharts.has(id)) screenCharts.set(id, echarts.init($(id)));
     return screenCharts.get(id);
@@ -133,8 +135,9 @@ function renderScreenCharts(models) {
   map.off('click');map.on('click',p=>{$('map-title').textContent=`${p.name} · 公开主要省份累计量 ${Number.isFinite(p.value)?number(p.value):'暂无数据'}`;});
   $('map-reset').onclick=()=>{map.dispatchAction({type:'restore'});$('map-title').textContent='全国 · 导航型号主要省份分布';};
 }
-function fitScreen(){const scale=Math.min(innerWidth/1920,innerHeight/1080);$('screen-stage').style.transform=`scale(${scale})`;for(const c of screenCharts.values())c.resize();}
+function fitScreen(){for(const c of screenCharts.values())c.resize();}
 window.addEventListener('resize',fitScreen);
+new ResizeObserver(fitScreen).observe($('screen-stage'));
 fitScreen();
 
 $('login-form').addEventListener('submit', async event => {
