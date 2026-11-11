@@ -144,7 +144,7 @@ $('login-form').addEventListener('submit', async event => {
   event.preventDefault(); $('login-button').disabled = true; $('login-message').textContent = '正在验证账号…';
   try {
     if (!config.supabaseUrl || !config.publishableKey) throw new Error('管理员尚未完成账号服务配置。');
-    session = await request('/auth/v1/token?grant_type=password', {method:'POST', body: JSON.stringify({email:$('email').value.trim(), password:$('password').value})});
+    session = await request('/functions/v1/navigation-login', {method:'POST', body: JSON.stringify({username:$('username').value.trim(), password:$('password').value})});
     await load(); sessionStorage.setItem('nav-session', JSON.stringify(session)); $('password').value = '';
   } catch (error) { clearWorkspace(error.message); } finally { $('login-button').disabled = false; }
 });

@@ -4,7 +4,7 @@
 <body>
 <section id="login" class="login-shell">
  <div class="intro"><p class="eyebrow">AGRICULTURAL NAVIGATION</p><h1>看清农机导航<br>市场的每一步。</h1><p>厂家、型号与区域数据，在一个工作台中查询。</p><div class="intro-grid"><span>厂家型号查询</span><span>区域分布</span><span>年度变化</span><span>资料溯源</span></div></div>
- <form id="login-form" class="login-card"><span class="mark">N / 农机导航</span><h2>登录数据平台</h2><p>使用管理员为你创建的账号登录。</p><label>邮箱<input id="email" type="email" autocomplete="username" required></label><label>密码<input id="password" type="password" autocomplete="current-password" required minlength="8"></label><button id="login-button" type="submit">登录</button><p id="login-message" role="status" aria-live="polite"></p></form>
+ <form id="login-form" class="login-card"><span class="mark">N / 农机导航</span><h2>登录数据平台</h2><p>使用管理员为你创建的账号登录。</p><label>用户名<input id="username" type="text" autocomplete="username" placeholder="例如 aldous001" pattern="[A-Za-z0-9_]{3,32}" required></label><label>密码<input id="password" type="password" autocomplete="current-password" required minlength="8"></label><button id="login-button" type="submit">登录</button><p id="login-message" role="status" aria-live="polite"></p></form>
 </section>
 <main id="workspace" hidden><div id="screen-stage">
  <header><a class="brand" href="./">N <span>农机导航<span class="brand-sub">数据平台</span></span></a><nav><button class="nav active" data-view="overview">市场概览</button><button class="nav" data-view="catalog">厂家与型号</button></nav><div class="account"><span id="user-email"></span><button id="change-password" class="quiet">修改密码</button><button id="logout" class="quiet">退出</button></div></header>
