@@ -184,7 +184,7 @@ async function refreshAccounts(){
  const result = await request('/functions/v1/navigation-accounts',{method:'POST',body:JSON.stringify({action:'list'})});
  accountUsers = result.users;
  $('account-select').replaceChildren(new Option('创建新账号',''), ...accountUsers.map(u=>new Option(u.username+(u.enabled?'':'（已停用）'),u.user_id)));
- $('account-form').reset();$('account-enabled').checked=true;
+ $('account-form').reset();$('account-enabled').checked=true;$('account-username').disabled=false;$('account-enabled').disabled=false;
 }
 $('manage-accounts').onclick=async()=>{
  $('accounts-dialog').showModal();$('accounts-message').textContent='正在读取账号…';
