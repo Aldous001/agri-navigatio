@@ -1,21 +1,25 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><title>农机导航 · 数据平台</title><link rel="stylesheet" href="styles.css"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><title>农机导航 · 数据平台</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="screen.css"></head>
 <body>
 <section id="login" class="login-shell">
  <div class="intro"><p class="eyebrow">AGRICULTURAL NAVIGATION</p><h1>看清农机导航<br>市场的每一步。</h1><p>厂家、型号与区域数据，在一个工作台中查询。</p><div class="intro-grid"><span>厂家型号查询</span><span>区域分布</span><span>年度变化</span><span>资料溯源</span></div></div>
  <form id="login-form" class="login-card"><span class="mark">N / 农机导航</span><h2>登录数据平台</h2><p>使用管理员为你创建的账号登录。</p><label>邮箱<input id="email" type="email" autocomplete="username" required></label><label>密码<input id="password" type="password" autocomplete="current-password" required minlength="8"></label><button id="login-button" type="submit">登录</button><p id="login-message" role="status" aria-live="polite"></p></form>
 </section>
-<main id="workspace" hidden>
+<main id="workspace" hidden><div id="screen-stage">
  <header><a class="brand" href="./">N <span>农机导航<span class="brand-sub">数据平台</span></span></a><nav><button class="nav active" data-view="overview">市场概览</button><button class="nav" data-view="catalog">厂家与型号</button></nav><div class="account"><span id="user-email"></span><button id="change-password" class="quiet">修改密码</button><button id="logout" class="quiet">退出</button></div></header>
  <section class="page"><div class="page-heading"><div><p class="eyebrow">NAVIGATION MARKET</p><h1 id="page-title">农机导航市场概览</h1><p id="updated">正在读取数据</p></div><button id="export" class="secondary">导出当前结果 ↓</button></div>
  <div class="filters"><label>检索厂家或型号<input type="search" id="query" placeholder="输入厂家名称或完整型号"></label><label>年份<select id="year"><option value="all">全部年份</option></select></label><label>厂家<select id="maker"><option value="all">全部厂家</option></select></label><button id="reset" class="quiet">重置筛选</button></div>
  <p id="notice" class="notice" role="status"></p>
  <div class="metrics"><article><span>导航型号条目</span><strong id="model-count">—</strong><small>当前筛选范围</small></article><article><span>厂家名称</span><strong id="maker-count">—</strong><small>按资料中的企业名称保留</small></article><article><span>型号汇总台套数</span><strong id="quantity">—</strong><small id="quantity-note">来源口径见下方说明</small></article><article><span>资料核查日期</span><strong id="verified-date">—</strong><small>型号类别核查快照</small></article></div>
- <section id="overview-view" class="chart-grid"><article class="panel"><div class="panel-heading"><h2>区域分布</h2><span>网站公开的主要省份</span></div><div id="regions" class="bars"></div></article><article class="panel"><div class="panel-heading"><h2>年度台套变化</h2><span>按型号汇总</span></div><div id="trend" class="trend"></div></article></section>
+ <section id="overview-view" class="screen-main">
+ <div class="screen-col"><article class="panel"><div class="panel-heading"><h2>导航型号 TOP10</h2><span>按型号台套汇总</span></div><div id="model-ranking" class="chart-slot"></div></article><article class="panel"><div class="panel-heading"><h2>年度台套变化</h2></div><div id="trend" class="trend"></div></article></div>
+ <article class="panel map-panel"><div class="panel-heading"><h2 id="map-title">全国 · 导航型号主要省份分布</h2><button id="map-reset" class="quiet">返回全国</button></div><div id="navigation-map"></div><p class="map-caption">点击省份查看当前索引覆盖量 · 省份数据来自各型号公开 TOP6</p></article>
+ <div class="screen-col"><article class="panel"><div class="panel-heading"><h2>厂家型号覆盖 TOP10</h2><span>已核实型号数</span></div><div id="maker-ranking" class="chart-slot"></div></article><article class="panel"><div class="panel-heading"><h2>区域台套 TOP8</h2></div><div id="regions" class="bars"></div></article></div>
+ </section>
  <article class="panel table-panel"><div class="panel-heading"><h2>导航厂家与型号</h2><span id="result-count"></span></div><div class="table-scroll"><table><thead><tr><th>厂家名称</th><th>导航型号</th><th>台套数</th><th>核查依据</th><th>说明</th></tr></thead><tbody id="rows"></tbody></table></div><div class="pagination"><button id="previous" class="quiet">上一页</button><span id="page-number"></span><button id="next" class="quiet">下一页</button></div></article>
  <footer>数据由管理员维护。公开资料中的厂家用名与型号写法保留在明细中。<span id="source-note"></span></footer></section>
-</main>
+</div></main>
 <dialog id="password-dialog"><form id="password-form"><h2>修改登录密码</h2><label>新密码<input id="new-password" type="password" autocomplete="new-password" minlength="12" required></label><p id="password-message" role="status"></p><div class="dialog-actions"><button type="button" id="close-dialog" class="quiet">取消</button><button type="submit">保存密码</button></div></form></dialog>
-<script src="config.js"></script><script type="module" src="app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script><script src="https://sky9606.github.io/agri-subsidy-dashboard/assets/china.js"></script><script src="config.js"></script><script type="module" src="app.js"></script>
 </body></html>

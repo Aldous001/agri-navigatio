@@ -88,6 +88,7 @@ function render() {
 }
 
 function renderCharts(models) {
+  renderScreenCharts(models);
   const regions = new Map();
   for (const model of models) for (const region of model.regions || []) regions.set(region.name, (regions.get(region.name) || 0) + region.quantity);
   const ranked = [...regions].sort((a,b) => b[1] - a[1]).slice(0, 8);
@@ -109,6 +110,32 @@ function renderCharts(models) {
     const year = document.createElement('span'); year.textContent = y; group.append(label, bar, year); return group;
   }));
 }
+
+const screenCharts = new Map();
+function renderScreenCharts(models) {
+  if (!window.echarts) return;
+  const chart = id => {
+    if (!screenCharts.has(id)) screenCharts.set(id, echarts.init($(id)));
+    return screenCharts.get(id);
+  };
+  function ranking(id, entries) {
+    const rows = entries.slice(0, 10).reverse();
+    chart(id).setOption({animation:false,tooltip:{trigger:'axis'},grid:{left:130,right:45,top:4,bottom:4},xAxis:{type:'value',show:false},yAxis:{type:'category',data:rows.map(r=>r[0]),axisLine:{show:false},axisTick:{show:false},axisLabel:{color:'#8fb2d9',fontSize:10,width:124,overflow:'truncate'}},series:[{type:'bar',data:rows.map(r=>r[1]),barWidth:8,itemStyle:{color:'#37d6ff'},label:{show:true,position:'right',color:'#dceaff',fontSize:10}}]});
+  }
+  ranking('model-ranking',models.map(m=>[m.model,quantity(m)]).sort((a,b)=>b[1]-a[1]));
+  const makers = new Map();
+  for (const m of models) makers.set(m.factory,(makers.get(m.factory)||0)+1);
+  ranking('maker-ranking',[...makers].sort((a,b)=>b[1]-a[1]));
+  const regions = new Map();
+  if ($('year').value === 'all') for (const m of models) for (const r of m.regions||[]) regions.set(r.name,(regions.get(r.name)||0)+r.quantity);
+  const map=chart('navigation-map');
+  map.setOption({animation:false,tooltip:{formatter:p=>`${p.name} ${Number.isFinite(p.value)?number(p.value):'暂无省份数据'}`},visualMap:{min:0,max:Math.max(1,...regions.values()),left:8,bottom:5,text:['高','低'],textStyle:{color:'#8fb2d9'},inRange:{color:['#102d55','#157fb5','#37d6ff']},calculable:false,itemHeight:80},series:[{type:'map',map:'china',roam:true,label:{show:false},itemStyle:{areaColor:'#0c203d',borderColor:'#3973a5',borderWidth:.7},emphasis:{label:{color:'#fff'},itemStyle:{areaColor:'#2784ad'}},data:[...regions].map(([name,value])=>({name,value}))}]});
+  map.off('click');map.on('click',p=>{$('map-title').textContent=`${p.name} · 公开主要省份累计量 ${Number.isFinite(p.value)?number(p.value):'暂无数据'}`;});
+  $('map-reset').onclick=()=>{map.dispatchAction({type:'restore'});$('map-title').textContent='全国 · 导航型号主要省份分布';};
+}
+function fitScreen(){const scale=Math.min(innerWidth/1920,innerHeight/1080);$('screen-stage').style.transform=`scale(${scale})`;for(const c of screenCharts.values())c.resize();}
+window.addEventListener('resize',fitScreen);
+fitScreen();
 
 $('login-form').addEventListener('submit', async event => {
   event.preventDefault(); $('login-button').disabled = true; $('login-message').textContent = '正在验证账号…';
