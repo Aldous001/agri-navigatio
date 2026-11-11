@@ -122,7 +122,7 @@ function renderScreenCharts(models) {
   };
   function ranking(id, entries) {
     const rows = entries.slice(0, 10).reverse();
-    chart(id).setOption({animation:false,tooltip:{trigger:'axis'},grid:{left:130,right:45,top:4,bottom:4},xAxis:{type:'value',show:false},yAxis:{type:'category',data:rows.map(r=>r[0]),axisLine:{show:false},axisTick:{show:false},axisLabel:{color:'#8fb2d9',fontSize:10,width:124,overflow:'truncate'}},series:[{type:'bar',data:rows.map(r=>r[1]),barWidth:8,itemStyle:{color:'#37d6ff'},label:{show:true,position:'right',color:'#dceaff',fontSize:10}}]});
+    chart(id).setOption({animation:false,tooltip:{trigger:'axis'},grid:{left:130,right:45,top:4,bottom:4},xAxis:{type:'value',show:false},yAxis:{type:'category',data:rows.map(r=>r[0]),axisLine:{show:false},axisTick:{show:false},axisLabel:{color:'#647d6a',fontSize:10,width:124,overflow:'truncate'}},series:[{type:'bar',data:rows.map(r=>r[1]),barWidth:8,itemStyle:{color:'#50b957'},label:{show:true,position:'right',color:'#2e4b36',fontSize:10}}]});
   }
   ranking('model-ranking',models.map(m=>[m.model,quantity(m)]).sort((a,b)=>b[1]-a[1]));
   const makers = new Map();
@@ -131,7 +131,7 @@ function renderScreenCharts(models) {
   const regions = new Map();
   if ($('year').value === 'all') for (const m of models) for (const r of m.regions||[]) regions.set(r.name,(regions.get(r.name)||0)+r.quantity);
   const map=chart('navigation-map');
-  map.setOption({animation:false,tooltip:{formatter:p=>`${p.name} ${Number.isFinite(p.value)?number(p.value):'暂无省份数据'}`},visualMap:{min:0,max:Math.max(1,...regions.values()),left:8,bottom:5,text:['高','低'],textStyle:{color:'#8fb2d9'},inRange:{color:['#102d55','#157fb5','#37d6ff']},calculable:false,itemHeight:80},series:[{type:'map',map:'china',roam:true,label:{show:false},itemStyle:{areaColor:'#0c203d',borderColor:'#3973a5',borderWidth:.7},emphasis:{label:{color:'#fff'},itemStyle:{areaColor:'#2784ad'}},data:[...regions].map(([name,value])=>({name,value}))}]});
+  map.setOption({animation:false,tooltip:{formatter:p=>`${p.name} ${Number.isFinite(p.value)?number(p.value):'暂无省份数据'}`},visualMap:{min:0,max:Math.max(1,...regions.values()),left:8,bottom:5,text:['高','低'],textStyle:{color:'#647d6a'},inRange:{color:['#e6f4e8','#8bd294','#50b957']},calculable:false,itemHeight:80},series:[{type:'map',map:'china',roam:true,label:{show:false},itemStyle:{areaColor:'#edf5ee',borderColor:'#a3c4aa',borderWidth:.7},emphasis:{label:{color:'#164f23'},itemStyle:{areaColor:'#00b61d'}},data:[...regions].map(([name,value])=>({name,value}))}]});
   map.off('click');map.on('click',p=>{$('map-title').textContent=`${p.name} · 公开主要省份累计量 ${Number.isFinite(p.value)?number(p.value):'暂无数据'}`;});
   $('map-reset').onclick=()=>{map.dispatchAction({type:'restore'});$('map-title').textContent='全国 · 导航型号主要省份分布';};
 }
