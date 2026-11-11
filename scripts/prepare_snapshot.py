@@ -27,6 +27,8 @@ def main():
             continue
         models.append({
             'factory': factory, 'model': model, 'quantity': row[2],
+            'amount': row[3], 'averagePrice': round(row[3]/row[2],2) if row[2] else 0,
+            'provinceCount': row[6], 'sourceFactory': row[1],
             'yearly': dict(zip(map(str, data['meta']['years']), row[4])),
             'regions': [{'name': data['meta']['units'][province], 'quantity': quantity} for province, quantity in row[5]],
             'sourceTitle': reviewed[5], 'sourceUrl': reviewed[7], 'note': reviewed[8]

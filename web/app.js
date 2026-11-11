@@ -38,7 +38,7 @@ async function load() {
   const admins = await request('/rest/v1/nav_admins?select=user_id');
   $('manage-accounts').hidden = !admins.length;
   $('updated').textContent = `数据快照 ${snapshot.generated} · 最近上传 ${new Date(records[0].updated_at).toLocaleString('zh-CN')}`;
-  $('notice').textContent = snapshot.notice;
+  $('notice').textContent = snapshot.notice + ' 数据更新时间 ' + snapshot.generated;
   $('source-note').textContent = snapshot.sourceNote;
   $('verified-date').textContent = snapshot.verifiedDate;
   $('year').replaceChildren(new Option('全部年份', 'all'), ...snapshot.years.map(y => new Option(`${y} 年`, y)));
@@ -70,18 +70,19 @@ function render() {
   $('maker-count').textContent = number(new Set(models.map(m => m.factory)).size);
   $('quantity').textContent = number(models.reduce((sum, m) => sum + quantity(m), 0));
   $('quantity-note').textContent = snapshot.quantityLabel;
+  $('amount-total').textContent = $('year').value === 'all' ? number(models.reduce((sum,m)=>sum+(m.amount||0),0)) : '仅累计数据';
   $('result-count').textContent = `共 ${count} 个型号条目`;
   $('overview-view').hidden = view !== 'overview';
   const rows = models.slice(page * pageSize, (page + 1) * pageSize).map(m => {
     const tr = document.createElement('tr');
-    tr.append(cell(m.factory), cell(m.model), cell(number(quantity(m))));
+    tr.append(cell(m.factory), cell(m.model), cell(number(quantity(m))), cell($('year').value === 'all' ? number(m.amount) : '—'), cell($('year').value === 'all' ? number(m.averagePrice) : '—'), cell($('year').value === 'all' ? number(m.provinceCount) : '—'));
     const source = cell('');
     const href = safeLink(m.sourceUrl);
     if (href) { const a = document.createElement('a'); a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = m.sourceTitle || '查看资料'; source.append(a); }
     tr.append(source, cell(m.note || ''));
     return tr;
   });
-  if (!rows.length) { const tr = document.createElement('tr'); const td = cell('没有匹配的型号，请调整筛选条件。'); td.colSpan = 5; tr.append(td); rows.push(tr); }
+  if (!rows.length) { const tr = document.createElement('tr'); const td = cell('没有匹配的型号，请调整筛选条件。'); td.colSpan = 8; tr.append(td); rows.push(tr); }
   $('rows').replaceChildren(...rows);
   $('page-number').textContent = `${page + 1} / ${Math.max(1, Math.ceil(count / pageSize))}`;
   $('previous').disabled = page === 0;
