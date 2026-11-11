@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {buildSnapshot} from '../supabase/functions/navigation-sync/sync.mjs';
+import {buildSnapshot,buildReference} from '../supabase/functions/navigation-sync/sync.mjs';
 const previous = {generated:'2026-11-10 09:15',models:[{model:'X1',factory:'核验厂家',sourceFactory:'原始厂家',sourceUrl:'https://example.com/evidence'}]};
 const data = () => ({meta:{generated:'2026-11-11 09:15',years:[2025,2026],units:['江苏省']},search:{m:[['X1','原始厂家',10,10000,[3,7],[[0,10]],1]]}});
 const encode = source => 'window.DASH_DATA = ' + JSON.stringify(source) + ';';
@@ -18,4 +18,10 @@ test('来源缺失、厂家变更、数值异常和时间倒退均拒绝覆盖',
     const source=data();change(source);assert.throws(()=>buildSnapshot(encode(source),previous));
   }
   assert.throws(()=>buildSnapshot('<html>错误页面</html>',previous));
+});
+test('全品目区域数据完整保留，缺少区域字段时拒绝覆盖',()=>{
+  const source=data();Object.assign(source,{statsYear:{'全国':{all:[1,1,100,30]}},countyStat:{'江苏省':{'测试县':{all:[1,1,100,30]}}},
+    monthSeries:{'全国':{'2026-01':[1,100]}},countyDetail:{},cityStat:{},cityDetail:{},townOfCounty:{},countyCity:{},extraField:{keep:true}});
+  const reference=buildReference(encode(source));assert.deepEqual(reference.data,source);assert.match(reference.scope,/全品目/);
+  delete source.countyStat;assert.throws(()=>buildReference(encode(source)));
 });

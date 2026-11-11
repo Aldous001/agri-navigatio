@@ -2,6 +2,32 @@ export const SOURCE_URL = 'https://sky9606.github.io/agri-subsidy-dashboard/data
 const normalize = value => String(value).replace(/\s+/g, '').replace(/（/g, '(').replace(/）/g, ')');
 const validNumber = value => typeof value === 'number' && Number.isFinite(value) && value >= 0;
 
+export function buildReference(text, checkedAt = new Date().toISOString()) {
+  if (!/^\s*window\.DASH_DATA\s*=/.test(text)) throw new Error('来源文件格式不符');
+  const data = JSON.parse(text.slice(text.indexOf('=') + 1).trim().replace(/;\s*$/, ''));
+  for (const key of ['meta','statsYear','countyStat','monthSeries','countyDetail','cityStat','cityDetail','townOfCounty','countyCity']) {
+    if (!data[key] || typeof data[key] !== 'object' || Array.isArray(data[key])) throw new Error('区域数据缺少字段：' + key);
+  }
+  if (!Array.isArray(data.meta.units) || !data.meta.units.length || !data.statsYear['全国']?.all
+      || !data.monthSeries['全国'] || !Object.keys(data.countyStat).length) throw new Error('区域数据不完整');
+  for (const months of Object.values(data.monthSeries)) for (const [month, values] of Object.entries(months)) {
+    if (!/^\d{4}-\d{2}$/.test(month) || !Array.isArray(values) || values.length !== 2 || !values.every(validNumber)) throw new Error('月度数据异常');
+  }
+  return {generated: data.meta.generated, checkedAt, scope:'原站全品目数据，含作业监测设备；非纯农机导航统计',
+    sourceUrl:SOURCE_URL, data};
+}
+
+export async function packReference(reference) {
+  // Keep the complete source, compressed to avoid slow multi-megabyte JSONB parsing in the API.
+  const stream = new Blob([JSON.stringify(reference.data)]).stream().pipeThrough(new CompressionStream('gzip'));
+  const bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+  const content = btoa(Array.from(bytes, byte => String.fromCharCode(byte)).join(''));
+  const {data,...metadata}=reference;
+  return {...metadata,encoding:'gzip-base64',content,coverage:{provinces:data.meta.units.length,
+    counties:Object.values(data.countyStat).reduce((sum,counties)=>sum+Object.keys(counties).length,0),
+    nationalMonths:Object.keys(data.monthSeries['全国']).length}};
+}
+
 export function buildSnapshot(text, previous, checkedAt = new Date().toISOString()) {
   if (!/^\s*window\.DASH_DATA\s*=/.test(text)) throw new Error('来源文件格式不符');
   const source = JSON.parse(text.slice(text.indexOf('=') + 1).trim().replace(/;\s*$/, ''));

@@ -1,4 +1,4 @@
-import { buildSnapshot, SOURCE_URL } from './sync.mjs';
+import { buildSnapshot, buildReference, packReference, SOURCE_URL } from './sync.mjs';
 import schedulerConfig from './scheduler-config.json' with { type: 'json' };
 
 const base = Deno.env.get('SUPABASE_URL')!;
@@ -6,9 +6,13 @@ const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const headers = {apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json'};
 async function rest(path: string, options: RequestInit = {}) {
   const response = await fetch(`${base}/rest/v1/${path}`, {...options,
-    headers: {...headers, ...options.headers}, signal: AbortSignal.timeout(20000)});
-  if (!response.ok) throw new Error(`数据库请求失败 ${response.status}`);
+    headers: {...headers, ...options.headers}, signal: AbortSignal.timeout(path.startsWith('rpc/') ? 65000 : 20000)});
   const text = await response.text();
+  if (!response.ok) {
+    let detail = '';
+    try {const body=JSON.parse(text);detail=String(body.message || body.code || '').slice(0,200);} catch { /* No response body is exposed. */ }
+    throw new Error(`数据库请求失败 ${response.status}${detail ? ': '+detail : ''}`);
+  }
   return text ? JSON.parse(text) : null;
 }
 const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body),
@@ -29,12 +33,13 @@ Deno.serve(async (request: Request) => {
     const text = await response.text();
     if (text.length > 30000000) throw new Error('来源文件超出大小限制');
     const payload = buildSnapshot(text, records[0].payload, startedAt);
-    const updated = await rest(`nav_snapshots?id=eq.current&updated_at=eq.${encodeURIComponent(records[0].updated_at)}`,
-      {method:'PATCH', headers:{Prefer:'return=representation'}, body:JSON.stringify({payload,updated_at:startedAt})});
-    if (!updated?.length) throw new Error('快照已被其他任务更新，本次未覆盖');
+    const reference = buildReference(text, startedAt);
+    await rest('rpc/commit_navigation_sync', {method:'POST', body:JSON.stringify({p_payload:payload,
+      p_reference:await packReference(reference),p_expected_updated_at:records[0].updated_at,p_checked_at:startedAt})});
     await rest('nav_sync_runs', {method:'POST', body:JSON.stringify({started_at:startedAt,
       finished_at:new Date().toISOString(),status:'success',source_generated:payload.generated,model_count:payload.models.length})});
-    return reply({status:'success',generated:payload.generated,models:payload.models.length,checkedAt:startedAt});
+    return reply({status:'success',generated:payload.generated,models:payload.models.length,
+      counties:Object.values(reference.data.countyStat).reduce((sum, counties) => sum + Object.keys(counties).length, 0),checkedAt:startedAt});
   } catch (error) {
     const message = error instanceof Error ? error.message : '同步失败';
     try { await rest('nav_sync_runs', {method:'POST',body:JSON.stringify({started_at:startedAt,

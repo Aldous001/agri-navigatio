@@ -1,3 +1,4 @@
+import {createRegionalView} from './regional.js';
 const $ = id => document.getElementById(id);
 const config = window.APP_CONFIG;
 let session = null;
@@ -18,11 +19,14 @@ async function request(path, options = {}) {
   return body;
 }
 
+const regionalView = createRegionalView({document, request, number});
+
 function clearWorkspace(message = '') {
   session = null;
   snapshot = null;
   sessionStorage.removeItem('nav-session');
   $('rows').replaceChildren();
+  regionalView.clear();
   $('workspace').hidden = true;
   $('login').hidden = false;
   $('login-message').textContent = message;
@@ -52,6 +56,7 @@ async function load() {
   $('login').hidden = true;
   $('workspace').hidden = false;
   render();
+  if (view === 'regional') await regionalView.open();
 }
 
 function quantity(model) {
@@ -78,6 +83,11 @@ function render() {
   $('amount-total').textContent = $('year').value === 'all' ? number(models.reduce((sum,m)=>sum+(m.amount||0),0)) : '仅累计数据';
   $('result-count').textContent = `共 ${count} 个型号条目`;
   $('overview-view').hidden = view !== 'overview';
+  const regional = view === 'regional';
+  $('regional-view').hidden = !regional;
+  for (const selector of ['.filters','.metrics','.table-panel']) document.querySelector(selector).hidden = regional;
+  $('notice').hidden = regional;
+  $('export').hidden = regional;
   const rows = models.slice(page * pageSize, (page + 1) * pageSize).map(m => {
     const tr = document.createElement('tr');
     tr.append(cell(m.factory), cell(m.model), cell(number(quantity(m))), cell($('year').value === 'all' ? number(m.amount) : '—'), cell($('year').value === 'all' ? number(m.averagePrice) : '—'), cell($('year').value === 'all' ? number(m.provinceCount) : '—'));
@@ -160,7 +170,15 @@ $('logout').addEventListener('click', async () => { try { await request('/auth/v
 for (const id of ['query','year','maker']) $(id).addEventListener(id === 'query' ? 'input' : 'change', () => {page = 0; render();});
 $('reset').onclick = () => { $('query').value = ''; $('year').value = 'all'; $('maker').value = 'all'; page = 0; render(); };
 $('previous').onclick = () => {page--; render();}; $('next').onclick = () => {page++; render();};
-document.querySelectorAll('[data-view]').forEach(button => button.onclick = () => {view = button.dataset.view; document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('active', b === button)); $('page-title').textContent = view === 'overview' ? '农机导航市场概览' : '导航厂家与型号查询'; render();});
+document.querySelectorAll('[data-view]').forEach(button => button.onclick = async () => {
+  view = button.dataset.view;
+  document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('active', b === button));
+  $('page-title').textContent = view === 'overview' ? '农机导航市场概览' : view === 'regional' ? '原站全品目月度与区域' : '导航厂家与型号查询';
+  render();
+  if (view === 'regional') {
+    try {await regionalView.open();} catch (error) {$('regional-status').textContent = '区域数据读取失败：' + error.message;}
+  }
+});
 $('export').onclick = () => {
   const escape = value => '"' + String(value ?? '').replace(/^[=+@-]/, "'$&").replaceAll('"', '""') + '"';
   const allYears = $('year').value === 'all';
