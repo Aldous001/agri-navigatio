@@ -167,6 +167,7 @@ dialog input, dialog select { margin-top: 8px; }
   .metrics article, .regional-metrics article { padding: 16px; }
   .metrics strong, .regional-metrics strong { font-size: 24px; }
   .metrics article:last-child { grid-column: 1 / -1; }
+  .metrics article:nth-child(3) { grid-column: 1 / -1; }
   .metrics article:nth-child(4) { grid-column: 1 / -1; }
   .screen-main { grid-template-columns: 1fr; }
   .map-panel { height: 440px; grid-column: auto; }
@@ -177,6 +178,7 @@ dialog input, dialog select { margin-top: 8px; }
   .table-scroll { max-height: 520px; }
   .regional-filters { padding: 16px; gap: 16px; }
   .regional-metrics { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .regional-metrics article:nth-child(n+3) { grid-column: 1 / -1; }
   .regional-charts, .regional-tables, #regional-detail { grid-template-columns: 1fr; }
   #regional-map, #regional-month-chart { height: 320px; }
   .regional-actions > button { width: 100%; }
