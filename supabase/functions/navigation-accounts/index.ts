@@ -1,5 +1,8 @@
-const h={"Access-Control-Allow-Origin":"https://aldous001.github.io","Access-Control-Allow-Headers":"authorization,apikey,content-type","Access-Control-Allow-Methods":"POST,OPTIONS","Content-Type":"application/json","Cache-Control":"no-store"};
+const baseHeaders={"Access-Control-Allow-Origin":"https://aldous001.github.io","Access-Control-Allow-Headers":"authorization,apikey,content-type","Access-Control-Allow-Methods":"POST,OPTIONS","Content-Type":"application/json","Cache-Control":"no-store"};
+const allowedOrigins = new Set(['https://aldous001.github.io', 'http://127.0.0.1:8765', 'http://127.0.0.1:8766', 'http://localhost:8765', 'http://localhost:8766']);
 Deno.serve(async req=>{
+ const origin = req.headers.get('Origin') || '';
+ const h = {...baseHeaders, 'Access-Control-Allow-Origin': allowedOrigins.has(origin) ? origin : 'https://aldous001.github.io', Vary: 'Origin'};
  const reply=(b,s=200)=>new Response(JSON.stringify(b),{status:s,headers:h});
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:h});
  if(req.method!=="POST")return reply({message:"Method not allowed"},405);

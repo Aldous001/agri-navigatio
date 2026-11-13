@@ -140,7 +140,8 @@ export function createRegionalView({document, request, number}) {
   $('regional-source-export').onclick=()=>download('原站完整汇总数据.json',JSON.stringify(snapshot),'application/json');
   win.addEventListener('resize',()=>{for(const c of charts.values())c.resize();});
   return {
-    async open() {
+    async open(expectedGeneration) {
+      if (snapshot && snapshot.generated === expectedGeneration) {render(); return;}
       $('regional-status').textContent='正在读取原站完整汇总数据…';
       const records=await request('/rest/v1/nav_snapshots?id=eq.reference&select=payload,updated_at');
       if(!records.length)throw new Error('区域数据尚未同步完成，请稍后重试');

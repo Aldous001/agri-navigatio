@@ -1,4 +1,4 @@
-import {createRegionalView} from './regional.js';
+import {createRegionalView} from './regional.js?v=20261113';
 const $ = id => document.getElementById(id);
 const config = window.APP_CONFIG;
 let session = null;
@@ -10,11 +10,13 @@ const number = value => Number(value || 0).toLocaleString('zh-CN', {maximumFract
 
 async function request(path, options = {}) {
   const response = await fetch(config.supabaseUrl.replace(/\/$/, '') + path, {
+    signal: AbortSignal.timeout(30000),
     ...options,
     headers: {apikey: config.publishableKey, 'Content-Type': 'application/json',
       ...(session ? {Authorization: `Bearer ${session.access_token}`} : {}), ...options.headers}
   });
   const body = await response.json().catch(() => null);
+  if (response.status === 429) throw new Error('尝试次数较多，请稍后重试。');
   if (!response.ok) throw new Error(body?.msg || body?.message || body?.error_description || `请求失败 ${response.status}`);
   return body;
 }
@@ -45,7 +47,7 @@ async function load() {
   $('manage-accounts').hidden = !admins.length;
   const syncInfo = snapshot.sync ? ` · ${snapshot.sync.schedule}自动同步 · 最近同步 ${new Date(snapshot.sync.checkedAt).toLocaleString('zh-CN')}` : '';
   $('updated').textContent = `来源数据 ${snapshot.generated}${syncInfo}`;
-  $('notice').textContent = snapshot.notice + ' 来源数据时间 ' + snapshot.generated + syncInfo;
+  $('notice').textContent = snapshot.notice;
   $('source-note').textContent = snapshot.sourceNote;
   $('verified-date').textContent = snapshot.verifiedDate;
   $('year').replaceChildren(new Option('全部年份', 'all'), ...snapshot.years.map(y => new Option(`${y} 年`, y)));
@@ -56,7 +58,7 @@ async function load() {
   $('login').hidden = true;
   $('workspace').hidden = false;
   render();
-  if (view === 'regional') await regionalView.open();
+  if (view === 'regional') await regionalView.open(snapshot.generated);
 }
 
 function quantity(model) {
@@ -102,7 +104,7 @@ function render() {
   $('page-number').textContent = `${page + 1} / ${Math.max(1, Math.ceil(count / pageSize))}`;
   $('previous').disabled = page === 0;
   $('next').disabled = (page + 1) * pageSize >= count;
-  renderCharts(models);
+  if (view === 'overview') {renderCharts(models); requestAnimationFrame(fitScreen);}
 }
 
 function renderCharts(models) {
@@ -158,13 +160,31 @@ window.addEventListener('resize',fitScreen);
 new ResizeObserver(fitScreen).observe($('screen-stage'));
 fitScreen();
 
+$('toggle-password').onclick = () => {
+  const visible = $('password').type === 'password';
+  $('password').type = visible ? 'text' : 'password';
+  $('toggle-password').textContent = visible ? '隐藏' : '显示';
+  $('toggle-password').setAttribute('aria-pressed', String(visible));
+};
+
 $('login-form').addEventListener('submit', async event => {
   event.preventDefault(); $('login-button').disabled = true; $('login-message').textContent = '正在验证账号…';
+  $('login-form').setAttribute('aria-busy', 'true');
+  $('login-button').textContent = '正在登录…';
   try {
     if (!config.supabaseUrl || !config.publishableKey) throw new Error('管理员尚未完成账号服务配置。');
     session = await request('/functions/v1/navigation-login', {method:'POST', body: JSON.stringify({username:$('username').value.trim(), password:$('password').value})});
+    $('login-message').textContent = '账号已验证，正在读取数据…';
     await load(); sessionStorage.setItem('nav-session', JSON.stringify(session)); $('password').value = '';
-  } catch (error) { clearWorkspace(error.message); } finally { $('login-button').disabled = false; }
+  } catch (error) {
+    const message = error.name === 'TimeoutError' ? '连接超时，请检查网络后重试。'
+      : error instanceof TypeError ? '暂时无法连接数据服务，请检查网络后重试。' : error.message;
+    clearWorkspace(message);
+  } finally {
+    $('login-button').disabled = false;
+    $('login-button').textContent = '登录';
+    $('login-form').setAttribute('aria-busy', 'false');
+  }
 });
 $('logout').addEventListener('click', async () => { try { await request('/auth/v1/logout', {method:'POST'}); } finally { clearWorkspace(); } });
 for (const id of ['query','year','maker']) $(id).addEventListener(id === 'query' ? 'input' : 'change', () => {page = 0; render();});
@@ -173,10 +193,11 @@ $('previous').onclick = () => {page--; render();}; $('next').onclick = () => {pa
 document.querySelectorAll('[data-view]').forEach(button => button.onclick = async () => {
   view = button.dataset.view;
   document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('active', b === button));
+  document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-current', b === button ? 'page' : 'false'));
   $('page-title').textContent = view === 'overview' ? '农机导航市场概览' : view === 'regional' ? '原站全品目月度与区域' : '导航厂家与型号查询';
   render();
   if (view === 'regional') {
-    try {await regionalView.open();} catch (error) {$('regional-status').textContent = '区域数据读取失败：' + error.message;}
+    try {await regionalView.open(snapshot.generated);} catch (error) {$('regional-status').textContent = '区域数据读取失败，请切换页面后重试。' + error.message;}
   }
 });
 $('export').onclick = () => {
